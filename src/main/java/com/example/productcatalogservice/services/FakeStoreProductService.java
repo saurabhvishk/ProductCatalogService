@@ -1,5 +1,6 @@
 package com.example.productcatalogservice.services;
 
+import com.example.productcatalogservice.clients.FakeStoreApiClient;
 import com.example.productcatalogservice.dtos.FakeStoreProductDto;
 import com.example.productcatalogservice.models.Category;
 import com.example.productcatalogservice.models.Product;
@@ -23,26 +24,28 @@ public class FakeStoreProductService implements IProductService{
     @Autowired
     private RestTemplateBuilder restTemplateBuilder;
 
+    @Autowired
+    private FakeStoreApiClient fakeStoreApiClient;
+
     @Override
     public Product getProductById(Long id) {
-        RestTemplate restTemplate =  restTemplateBuilder.build();
-        ResponseEntity<FakeStoreProductDto> fakeStoreProductDtoResponseEntity = restTemplate.getForEntity("https://fakestoreapi.com/products/{id}", FakeStoreProductDto.class,id);
-        if(fakeStoreProductDtoResponseEntity.getStatusCode().is2xxSuccessful() && fakeStoreProductDtoResponseEntity.getBody() != null)
-            return getProduct(fakeStoreProductDtoResponseEntity.getBody());
+        FakeStoreProductDto fakeStoreProductDto = fakeStoreApiClient.getProductById(id);
+        if(fakeStoreProductDto != null)
+            return getProduct(fakeStoreProductDto);
         return null;
     }
 
     @Override
     public Product createProduct(Product product) {
-        return null;
+        FakeStoreProductDto fakeStoreProductDto = fakeStoreApiClient.createProduct(getFakeStoreProductDto(product));
+        return getProduct(fakeStoreProductDto);
     }
 
     @Override
-    public List<Product> listAllProduct() {
-        RestTemplate restTemplate =  restTemplateBuilder.build();
-        FakeStoreProductDto[] response = restTemplate.getForEntity("https://fakestoreapi.com/products", FakeStoreProductDto[].class).getBody();
-        List<Product> products= new ArrayList<>();
-        for(FakeStoreProductDto fakeStoreProductDto:response){
+    public List<Product> getAllProducts() {
+        List<FakeStoreProductDto> fakeStoreProductDtosList = fakeStoreApiClient.getAllProducts();
+        List<Product> products = new ArrayList<>();
+        for(FakeStoreProductDto fakeStoreProductDto:fakeStoreProductDtosList){
             products.add(getProduct(fakeStoreProductDto));
         }
         return products;
@@ -51,8 +54,7 @@ public class FakeStoreProductService implements IProductService{
     @Override
     public Product replaceProduct(Long id, Product product) {
         FakeStoreProductDto input = getFakeStoreProductDto(product);
-        FakeStoreProductDto fakeStoreProductDtoResponse = requestForEntity("https://fakestoreapi.com/products/{id}",HttpMethod.PUT,input,FakeStoreProductDto.class,id).getBody();
-        return getProduct(fakeStoreProductDtoResponse);
+        return getProduct(fakeStoreApiClient.replaceProduct(id,input));
     }
 
     private <T> ResponseEntity<T> requestForEntity(String url, HttpMethod httpMethod, @Nullable Object request, Class<T> responseType, Object... uriVariables) throws RestClientException {

@@ -12,6 +12,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class ProductController {
     @GetMapping()
     public List<ProductDto> getProducts(){
         List<ProductDto> response = new ArrayList<>();
-        List<Product> products = productService.listAllProduct();
+        List<Product> products = productService.getAllProducts();
         for(Product product : products) {
             response.add(getProductDto(product));
         }
@@ -35,23 +36,19 @@ public class ProductController {
 
     @GetMapping("{id}")
     public ResponseEntity<ProductDto> getProductById(@PathVariable("id") Long productId){
-        try{
-            if(productId <= 0)
-                throw new IllegalArgumentException("Product ID is invalid");
+        if(productId <= 0)
+            throw new IllegalArgumentException("Product ID is invalid");
 
-            Product product = productService.getProductById(productId);
-            ProductDto productDto = getProductDto(product);
-            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-            headers.add("created-By","Saurabh");
-            return new ResponseEntity<>(productDto, headers, HttpStatus.OK);
-        }catch (IllegalArgumentException exception){
-            return  new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
-        }
+        Product product = productService.getProductById(productId);
+        ProductDto productDto = getProductDto(product);
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add("created-By","Saurabh");
+        return new ResponseEntity<>(productDto, headers, HttpStatus.OK);
     }
 
     @PostMapping("")
-    public ProductDto createProduct(@RequestBody ProductDto product){
-        return product;
+    public ProductDto createProduct(@RequestBody ProductDto product) throws FileNotFoundException {
+        return getProductDto(productService.createProduct(getProduct(product)));
     }
 
     @PutMapping("{id}")
